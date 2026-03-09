@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import api from '../api';
-
+//test development
+//testing
 const EMPTY = { name: '', location: '', manager_name: '' };
 
 export default function Kitchens() {
