@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import toast from 'react-hot-toast';
-import api from '../api';
+import api, { downloadCsv } from '../api';
 
 export default function Audit() {
   const [stockItems, setStockItems] = useState([]);
@@ -47,7 +47,13 @@ export default function Audit() {
     }
   };
 
-  const exportCsv = () => window.open('http://localhost:3001/api/export/audits', '_blank');
+  const exportCsv = async () => {
+    try {
+      await downloadCsv('/export/audits', {}, 'audits.csv');
+    } catch {
+      toast.error('Failed to export CSV.');
+    }
+  };
 
   return (
     <>

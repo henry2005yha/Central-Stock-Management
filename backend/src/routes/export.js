@@ -8,7 +8,17 @@ const sendCSV = (res, filename, rows) => {
   if (rows.length === 0) return res.status(404).json({ error: 'No data to export.' });
   res.setHeader('Content-Type', 'text/csv');
   res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-  stringify(rows, { header: true, cast: { date: v => v.toISOString().split('T')[0] } }).pipe(res);
+  stringify(rows, {
+    header: true,
+    cast: {
+      date: v => {
+        const yyyy = v.getFullYear();
+        const mm = String(v.getMonth() + 1).padStart(2, '0');
+        const dd = String(v.getDate()).padStart(2, '0');
+        return `${yyyy}-${mm}-${dd}`;
+      }
+    }
+  }).pipe(res);
 };
 
 // GET /api/export/stock-in
@@ -57,10 +67,63 @@ router.get('/stock-out', authenticate, async (req, res) => {
 
 // GET /api/export/stock-balance
 router.get('/stock-balance', authenticate, async (req, res) => {
+  const { from, to } = req.query;
   try {
-    const result = await pool.query(
-      'SELECT item_name, category, unit, total_in, total_out, total_adjustment, current_stock, min_stock_level, is_low_stock, supplier_name FROM stock_balance ORDER BY item_name'
-    );
+    let result;
+    if (from || to) {
+      // Build date-filtered stock balance dynamically
+      const siConditions = [];
+      const soConditions = [];
+      const auConditions = [];
+      const params = [];
+      let idx = 1;
+      if (from) {
+        siConditions.push(`received_date >= $${idx}`);
+        soConditions.push(`dispatch_date >= $${idx}`);
+        auConditions.push(`audit_date >= $${idx}`);
+        params.push(from);
+        idx++;
+      }
+      if (to) {
+        siConditions.push(`received_date <= $${idx}`);
+        soConditions.push(`dispatch_date <= $${idx}`);
+        auConditions.push(`audit_date <= $${idx}`);
+        params.push(to);
+        idx++;
+      }
+      const siWhere = siConditions.length ? ' AND ' + siConditions.join(' AND ') : '';
+      const soWhere = soConditions.length ? ' AND ' + soConditions.join(' AND ') : '';
+      const auWhere = auConditions.length ? ' AND ' + auConditions.join(' AND ') : '';
+
+      const query = `
+        SELECT
+          i.name AS item_name, i.category, i.unit,
+          COALESCE(si.total_in, 0) AS total_in,
+          COALESCE(so.total_out, 0) AS total_out,
+          COALESCE(adj.total_adjustment, 0) AS total_adjustment,
+          COALESCE(si.total_in, 0) - COALESCE(so.total_out, 0) + COALESCE(adj.total_adjustment, 0) AS current_stock,
+          i.min_stock_level,
+          CASE WHEN (COALESCE(si.total_in, 0) - COALESCE(so.total_out, 0) + COALESCE(adj.total_adjustment, 0)) <= i.min_stock_level THEN true ELSE false END AS is_low_stock,
+          s.name AS supplier_name
+        FROM items i
+        LEFT JOIN suppliers s ON s.id = i.supplier_id
+        LEFT JOIN (
+          SELECT item_id, SUM(quantity) AS total_in FROM stock_in WHERE 1=1${siWhere} GROUP BY item_id
+        ) si ON si.item_id = i.id
+        LEFT JOIN (
+          SELECT item_id, SUM(quantity) AS total_out FROM stock_out WHERE 1=1${soWhere} GROUP BY item_id
+        ) so ON so.item_id = i.id
+        LEFT JOIN (
+          SELECT item_id, SUM(actual_qty - expected_qty) AS total_adjustment FROM audits WHERE 1=1${auWhere} GROUP BY item_id
+        ) adj ON adj.item_id = i.id
+        ORDER BY i.name
+      `;
+      result = await pool.query(query, params);
+    } else {
+      result = await pool.query(
+        'SELECT item_name, category, unit, total_in, total_out, total_adjustment, current_stock, min_stock_level, is_low_stock, supplier_name FROM stock_balance ORDER BY item_name'
+      );
+    }
     sendCSV(res, `stock-balance-${new Date().toISOString().split('T')[0]}.csv`, result.rows);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });

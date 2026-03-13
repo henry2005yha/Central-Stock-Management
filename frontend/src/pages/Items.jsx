@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
-import api from '../api';
+import api, { downloadCsv } from '../api';
 
 const UNITS = ['kg', 'g', 'litre', 'ml', 'pcs', 'bottle', 'can', 'box', 'bag', 'pack'];
 const CATEGORIES = ['Grain', 'Meat', 'Seafood', 'Vegetable', 'Fruit', 'Oil', 'Dairy', 'Condiment', 'Spice', 'Beverage', 'Other'];
@@ -50,7 +50,13 @@ export default function Items() {
     catch (err) { toast.error(err.response?.data?.error || 'Cannot delete.'); }
   };
 
-  const exportCsv = () => window.open('http://localhost:3001/api/export/stock-balance', '_blank');
+  const exportCsv = async () => {
+    try {
+      await downloadCsv('/export/stock-balance', {}, 'stock-balance.csv');
+    } catch {
+      toast.error('Failed to export CSV.');
+    }
+  };
 
   const filtered = items.filter(i => i.item_name.toLowerCase().includes(search.toLowerCase()) || (i.category || '').toLowerCase().includes(search.toLowerCase()));
 
@@ -64,10 +70,12 @@ export default function Items() {
         </div>
       </div>
       <div className="filter-bar" style={{ padding: '12px 22px' }}>
-        <div className="form-group search-box" style={{ minWidth: 280 }}>
+        <div className="form-group" style={{ minWidth: 280 }}>
           <label className="form-label">Search</label>
-          <span className="search-icon">🔍</span>
-          <input className="form-control" placeholder="Search by name or category..." value={search} onChange={e => setSearch(e.target.value)} />
+          <div className="search-box">
+            <span className="search-icon">🔍</span>
+            <input className="form-control" placeholder="Search by name or category..." value={search} onChange={e => setSearch(e.target.value)} />
+          </div>
         </div>
       </div>
       <div className="page-content">

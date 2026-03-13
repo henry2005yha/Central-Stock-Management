@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
+import toast from 'react-hot-toast';
 import {
   BarChart,
   Bar,
@@ -12,7 +13,7 @@ import {
   CartesianGrid,
   Legend
 } from 'recharts';
-import api from '../api';
+import api, { downloadCsv } from '../api';
 
 const safeDate = (d) =>
   d && !isNaN(new Date(d)) ? format(new Date(d), 'dd MMM yyyy') : '—';
@@ -50,6 +51,7 @@ export default function Reports() {
   const [dashData, setDashData] = useState(null);
   const [audits, setAudits] = useState([]);
   const [loading, setLoading] = useState(true);
+
 
   useEffect(() => {
     Promise.all([
@@ -95,11 +97,21 @@ export default function Reports() {
 
   const discrepancies = audits.filter(a => num(a.difference) !== 0);
 
-  const exportBalance = () =>
-    window.open('http://localhost:3001/api/export/stock-balance', '_blank');
+  const exportBalance = async () => {
+    try {
+      await downloadCsv('/export/stock-balance', {}, 'stock-balance.csv');
+    } catch {
+      toast.error('Failed to export CSV.');
+    }
+  };
 
-  const exportAudits = () =>
-    window.open('http://localhost:3001/api/export/audits', '_blank');
+  const exportAudits = async () => {
+    try {
+      await downloadCsv('/export/audits', {}, 'audits.csv');
+    } catch {
+      toast.error('Failed to export CSV.');
+    }
+  };
 
   return (
     <>
@@ -112,10 +124,6 @@ export default function Reports() {
         </div>
 
         <div className="topbar-actions">
-          <button className="btn btn-outline btn-sm" onClick={exportBalance}>
-            📥 Stock Balance CSV
-          </button>
-
           <button className="btn btn-outline btn-sm" onClick={exportAudits}>
             📥 Audit CSV
           </button>
@@ -258,12 +266,17 @@ export default function Reports() {
         {/* Stock table */}
         <div className="card">
 
-          <div className="card-header">
-            <div className="card-title">📦 Current Stock Levels</div>
+          <div className="card-header" style={{ flexWrap: 'wrap', gap: 10 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div className="card-title">📦 Current Stock Levels</div>
+              <span className="badge badge-amber">
+                {stockBalance.filter(i => i.is_low_stock).length} low
+              </span>
+            </div>
 
-            <span className="badge badge-amber">
-              {stockBalance.filter(i => i.is_low_stock).length} low
-            </span>
+            <button className="btn btn-outline btn-sm" style={{ marginLeft: 'auto' }} onClick={exportBalance}>
+              📥 Export CSV
+            </button>
           </div>
 
           <div className="table-wrapper">

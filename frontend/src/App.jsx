@@ -6,8 +6,6 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import StockIn from './pages/StockIn';
 import StockOut from './pages/StockOut';
-import StockInHistory from './pages/StockInHistory';
-import StockOutHistory from './pages/StockOutHistory';
 import Audit from './pages/Audit';
 import Reports from './pages/Reports';
 import Items from './pages/Items';
@@ -31,26 +29,38 @@ function AppRoutes() {
         <Route index element={<Dashboard />} />
         <Route path="stock-in" element={<StockIn />} />
         <Route path="stock-out" element={<StockOut />} />
-        <Route path="stock-in/history" element={<StockInHistory />} />
-        <Route path="stock-out/history" element={<StockOutHistory />} />
-        <Route path="audit" element={<ProtectedRoute roles={['admin','manager']}><Audit /></ProtectedRoute>} />
-        <Route path="reports" element={<ProtectedRoute roles={['admin','manager']}><Reports /></ProtectedRoute>} />
-        <Route path="items" element={<ProtectedRoute roles={['admin','manager']}><Items /></ProtectedRoute>} />
+        <Route path="audit" element={<ProtectedRoute roles={['admin', 'manager']}><Audit /></ProtectedRoute>} />
+        <Route path="reports" element={<ProtectedRoute roles={['admin', 'manager']}><Reports /></ProtectedRoute>} />
+        <Route path="items" element={<ProtectedRoute roles={['admin', 'manager']}><Items /></ProtectedRoute>} />
         <Route path="kitchens" element={<ProtectedRoute roles={['admin']}><Kitchens /></ProtectedRoute>} />
-        <Route path="suppliers" element={<ProtectedRoute roles={['admin','manager']}><Suppliers /></ProtectedRoute>} />
+        <Route path="suppliers" element={<ProtectedRoute roles={['admin', 'manager']}><Suppliers /></ProtectedRoute>} />
       </Route>
       <Route path="*" element={<Navigate to="/" />} />
     </Routes>
   );
 }
 
+import { ThemeProvider } from './context/ThemeContext';
+
 export default function App() {
   return (
-    <AuthProvider>
-      <BrowserRouter>
-        <Toaster position="top-right" toastOptions={{ style: { background: '#1e293b', color: '#f1f5f9', border: '1px solid #334155' } }} />
-        <AppRoutes />
-      </BrowserRouter>
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <BrowserRouter>
+          <Toaster
+            position="top-right"
+            toastOptions={{
+              className: 'custom-toaster',
+              style: {
+                background: 'var(--bg-card)',
+                color: 'var(--text-primary)',
+                border: '1px solid var(--border)'
+              }
+            }}
+          />
+          <AppRoutes />
+        </BrowserRouter>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }

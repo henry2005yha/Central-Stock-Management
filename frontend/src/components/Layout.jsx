@@ -1,5 +1,6 @@
 import { Outlet, NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 
 const navGroups = [
   {
@@ -13,8 +14,6 @@ const navGroups = [
     items: [
       { path: '/stock-in', icon: '📥', label: 'Receive Stock' },
       { path: '/stock-out', icon: '📤', label: 'Dispatch Stock' },
-      { path: '/stock-in/history', icon: '📋', label: 'Receive History' },
-      { path: '/stock-out/history', icon: '📑', label: 'Dispatch History' },
     ]
   },
   {
@@ -32,6 +31,7 @@ const navGroups = [
 
 export default function Layout() {
   const { user, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const location = useLocation();
 
   const isActive = (path, exact) => {
@@ -44,7 +44,7 @@ export default function Layout() {
       <aside className="sidebar">
         <div className="sidebar-logo">
           <div className="logo-icon">🏪</div>
-          <h1>Warehouse<br/>Stock System</h1>
+          <h1>Warehouse<br />Stock System</h1>
           <span>Central Management</span>
         </div>
         <nav className="sidebar-nav">
@@ -81,6 +81,16 @@ export default function Layout() {
         </div>
       </aside>
       <main className="main-content">
+        <div className="layout-topbar" style={{ display: 'flex', justifyContent: 'flex-end', padding: '16px 28px 0', background: 'var(--bg-primary)' }}>
+          <button
+            onClick={toggleTheme}
+            className="btn btn-outline btn-sm"
+            style={{ borderRadius: '20px', padding: '6px 12px' }}
+            title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} Mode`}
+          >
+            {theme === 'dark' ? '☀️ Light Mode' : '🌙 Dark Mode'}
+          </button>
+        </div>
         <Outlet />
       </main>
     </div>

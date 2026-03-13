@@ -110,16 +110,17 @@ export default function Suppliers() {
       </div>
 
       <div className="filter-bar" style={{ padding: '12px 22px' }}>
-        <div className="form-group search-box" style={{ minWidth: 280 }}>
+        <div className="form-group" style={{ minWidth: 280 }}>
           <label className="form-label">Search</label>
-          <span className="search-icon">🔍</span>
-
-          <input
-            className="form-control"
-            placeholder="Search suppliers..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-          />
+          <div className="search-box">
+            <span className="search-icon">🔍</span>
+            <input
+              className="form-control"
+              placeholder="Search suppliers..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+            />
+          </div>
         </div>
       </div>
 
